@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./repositories/alpaca_lora_4bit"
+    ]
+}
