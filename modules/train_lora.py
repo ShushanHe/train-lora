@@ -80,21 +80,19 @@ def clean_path(base_path: str, path: str):
 
 
 def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch_size: int, batch_size: int, epochs: int, learning_rate: str, lr_scheduler_type: str, lora_rank: int, lora_alpha: int, lora_dropout: float, cutoff_len: int, dataset: str, eval_dataset: str, format: str, eval_steps: int, raw_text_file: str, overlap_len: int, newline_favor_len: int, higher_rank_limit: bool, warmup_steps: int, optimizer: str, hard_cut_string: str):
-    print("adfadf")
+    # if shared.args.monkey_patch:
+    #     from monkeypatch.peft_tuners_lora_monkey_patch import \
+    #         replace_peft_model_with_gptq_lora_model
+    #     replace_peft_model_with_gptq_lora_model()
 
-    if shared.args.monkey_patch:
-        from monkeypatch.peft_tuners_lora_monkey_patch import \
-            replace_peft_model_with_gptq_lora_model
-        replace_peft_model_with_gptq_lora_model()
-
-    global WANT_INTERRUPT
-    WANT_INTERRUPT = False
+    # global WANT_INTERRUPT
+    # WANT_INTERRUPT = False
 
     # == Input validation / processing ==
-    yield "Prepping..."
+    logging.info("Prepping...")
     lora_file_path = clean_path(None, lora_name)
     if lora_file_path.strip() == '':
-        yield "Missing or invalid LoRA file name input."
+        logging.info("Missing or invalid LoRA file name input.")
         return
 
     lora_file_path = f"{shared.args.lora_dir}/{lora_file_path}"
@@ -102,33 +100,33 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
     model_type = type(shared.model).__name__
 
     if model_type in MODEL_CLASSES:
+        logging.info(f"Model type: {model_type}")
         model_id = MODEL_CLASSES[model_type]
     else:
         model_id = "llama"
         if model_type == "PeftModelForCausalLM":
             if len(shared.args.lora_names) > 0:
-                yield "You are trying to train a LoRA while you already have another LoRA loaded. This will work, but may have unexpected effects. *(Will continue anyway in 5 seconds, press `Interrupt` to stop.)*"
+                # yield "You are trying to train a LoRA while you already have another LoRA loaded. This will work, but may have unexpected effects. *(Will continue anyway in 5 seconds, press `Interrupt` to stop.)*"
                 logging.warning("Training LoRA over top of another LoRA. May have unexpected effects.")
             else:
-                yield "Model ID not matched due to LoRA loading. Consider reloading base model. *(Will continue anyway in 5 seconds, press `Interrupt` to stop.)*"
+                # yield "Model ID not matched due to LoRA loading. Consider reloading base model. *(Will continue anyway in 5 seconds, press `Interrupt` to stop.)*"
                 logging.warning("Model ID not matched due to LoRA loading. Consider reloading base model.")
         else:
-            yield "LoRA training has only currently been validated for LLaMA, OPT, GPT-J, and GPT-NeoX models. Unexpected errors may follow. *(Will continue anyway in 5 seconds, press `Interrupt` to stop.)*"
+            # yield "LoRA training has only currently been validated for LLaMA, OPT, GPT-J, and GPT-NeoX models. Unexpected errors may follow. *(Will continue anyway in 5 seconds, press `Interrupt` to stop.)*"
             logging.warning(f"LoRA training has only currently been validated for LLaMA, OPT, GPT-J, and GPT-NeoX models. (Found model type: {model_type})")
 
-        time.sleep(5)
+    #     time.sleep(5)
 
     if shared.args.wbits > 0 and not shared.args.monkey_patch:
-        yield "LoRA training in 4-bit requires loading with `--monkey-patch`"
+        logging.warning("LoRA training in 4-bit requires loading with `--monkey-patch`")
         return
 
     elif not shared.args.load_in_8bit and shared.args.wbits <= 0:
-        yield "It is highly recommended you use `--load-in-8bit` for LoRA training. *(Will continue anyway in 2 seconds, press `Interrupt` to stop.)*"
-        logging.warning("It is highly recommended you use `--load-in-8bit` for LoRA training.")
+        logging.warning("It is highly recommended you use `--load-in-8bit` for LoRA training. *(Will continue anyway in 2 seconds, press `Interrupt` to stop.)*")
         time.sleep(2)  # Give it a moment for the message to show in UI before continuing
 
     if cutoff_len <= 0 or micro_batch_size <= 0 or batch_size <= 0 or actual_lr <= 0 or lora_rank <= 0 or lora_alpha <= 0:
-        yield "Cannot input zeroes."
+        logging.warning("Cannot input zeroes.")
         return
 
     gradient_accumulation_steps = batch_size // micro_batch_size
@@ -156,7 +154,7 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
             tokens = shared.tokenizer.encode(text_part)
             step = cutoff_len - overlap_len
             if step <= 0:
-                yield f"Error: overlap_len ({overlap_len}) cannot be greater than or equal to cutoff_len ({cutoff_len})"
+                logging.warning(f"Error: overlap_len ({overlap_len}) cannot be greater than or equal to cutoff_len ({cutoff_len})")
                 return
 
             tokens = list(split_chunks(tokens, step))
@@ -178,11 +176,11 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
 
     else:
         if dataset in ['None', '']:
-            yield "**Missing dataset choice input, cannot continue.**"
+            logging.info("**Missing dataset choice input, cannot continue.**")
             return
 
         if format in ['None', '']:
-            yield "**Missing format choice input, cannot continue.**"
+            logging.info("**Missing format choice input, cannot continue.**")
             return
 
         with open(clean_path('training/formats', f'{format}.json'), 'r', encoding='utf-8') as formatFile:
@@ -234,7 +232,7 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
             state_dict_peft = torch.load(f"{lora_file_path}/adapter_model.bin")
             set_peft_model_state_dict(lora_model, state_dict_peft)
     except:
-        yield traceback.format_exc()
+        print(traceback.format_exc())
         return
 
     if shared.args.monkey_patch:
@@ -309,9 +307,8 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
 
     # == Main run and monitor loop ==
     logging.info("Starting training...")
-    yield "Starting..."
     if WANT_INTERRUPT:
-        yield "Interrupted before start."
+        # yield "Interrupted before start."
         return
 
     def threaded_run():
@@ -329,7 +326,8 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
     while thread.is_alive():
         time.sleep(0.5)
         if WANT_INTERRUPT:
-            yield "Interrupting, please wait... *(Run will stop after the current training step completes.)*"
+            pass
+        #     yield "Interrupting, please wait... *(Run will stop after the current training step completes.)*"
 
         elif tracked.current_steps != last_step:
             last_step = tracked.current_steps
@@ -346,7 +344,7 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
 
                 total_time_estimate = (1.0 / its) * (tracked.max_steps)
 
-            yield f"Running... **{tracked.current_steps}** / **{tracked.max_steps}** ... {timer_info}, {format_time(time_elapsed)} / {format_time(total_time_estimate)} ... {format_time(total_time_estimate - time_elapsed)} remaining"
+            logging.info(f"Running... **{tracked.current_steps}** / **{tracked.max_steps}** ... {timer_info}, {format_time(time_elapsed)} / {format_time(total_time_estimate)} ... {format_time(total_time_estimate - time_elapsed)} remaining")
 
     # Saving in the train thread might fail if an error occurs, so save here if so.
     if not tracked.did_save:
@@ -354,11 +352,9 @@ def do_train(lora_name: str, always_override: bool, save_steps: int, micro_batch
         lora_model.save_pretrained(lora_file_path)
 
     if WANT_INTERRUPT:
-        logging.info("Training interrupted.")
-        yield f"Interrupted. Incomplete LoRA saved to `{lora_file_path}`"
+        logging.info(f"Interrupted. Incomplete LoRA saved to `{lora_file_path}`")
     else:
-        logging.info("Training complete!")
-        yield f"Done! LoRA saved to `{lora_file_path}`"
+        logging.info(f"Done! LoRA saved to `{lora_file_path}`")
 
 
 def split_chunks(arr, step):

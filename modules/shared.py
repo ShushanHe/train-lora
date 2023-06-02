@@ -99,14 +99,16 @@ parser.add_argument('--model', type=str, help='Name of the model to load by defa
 parser.add_argument("--model-dir", type=str, default='models/', help="Path to directory with all the models")
 parser.add_argument("--lora-dir", type=str, default='loras/', help="Path to directory with all the loras")
 parser.add_argument('--extensions', type=str, nargs="+", help='The list of extensions to load. If you want to load more than one extension, write the names separated by spaces.')
-parser.add_argument('--verbose', action='store_true', help='Print the prompts to the terminal.')
+# parser.add_argument('--verbose', action='store_true', help='Print the prompts to the terminal.')
+parser.add_argument('-l', '--log-level', type=str, default='INFO', help='The log level to set.')
+
 
 # LoRA Training Settings
 parser.add_argument('--lora_name', type=str, help='Name of the LoRA to train.')
 parser.add_argument('--lora_to_load', type=str, help='The list of LoRAs to load. If you want to load more than one LoRA, write the names separated by spaces.')
 parser.add_argument("--always_override", action='store_true', help="Override Existing Files")
 parser.add_argument("--save_steps", type=int, default=0, help="Save every n steps. ")
-parser.add_argument("--micro_batch_size", type=str, help="If above 0, a checkpoint of the LoRA will be saved every time this many steps pass.")
+parser.add_argument("--micro_batch_size", type=int, default=4, choices=range(1, 128+1, 1), metavar="[1-128]", help="Per-device batch size (NOTE: multiple devices not yet implemented). Increasing this will increase VRAM usage.")
 parser.add_argument("--batch_size", type=int, default=128, choices=range(0,1024+1, 4), metavar="[0-1024]", help="Global batch size. The two batch sizes together determine gradient accumulation (gradientAccum = batch / microBatch). Higher gradient accum values lead to better quality training.")
 parser.add_argument("--epochs", type=int, default=3, help="Number of times every entry in the dataset should be fed into training. So 1 means feed each item in once, 5 means feed it in five times, etc.")
 parser.add_argument("--learning_rate", type=str, default="3e-4", help="Learning rate, in scientific notation. 3e-4 is a good starting base point. 1e-2 is extremely high, 1e-6 is extremely low.")

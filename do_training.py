@@ -4,9 +4,6 @@ import requests
 import warnings
 import modules.logging_colors
 
-from modules import shared
-from modules.train_lora import do_train, do_copy_params
-
 import importlib
 import io
 import json
@@ -27,8 +24,9 @@ import yaml
 from PIL import Image
 
 from modules import shared, utils
+from modules.train_lora import do_train
 from modules.LoRA import add_lora_to_model
-from modules.models import load_model, load_soft_prompt, unload_model
+from modules.models import load_model, unload_model
 
 def load_model_wrapper(selected_model, autoload=False):
     if not autoload:
@@ -127,6 +125,8 @@ def save_model_settings(model, state):
         yield (f"Settings for {model} saved to {p}")
 
 if __name__ == "__main__":
+
+    logging.basicConfig(level=shared.args.log_level.upper())
     # # Loading custom settings
     # settings_file = None
     # if shared.args.settings is not None and Path(shared.args.settings).exists():
@@ -168,29 +168,29 @@ if __name__ == "__main__":
         if shared.args.lora_to_load:
             add_lora_to_model(shared.args.lora_to_load)
 
-    all_params = [
-        shared.args.lora_name,
-        shared.args.always_override,
-        shared.args.save_steps,
-        shared.args.micro_batch_size,
-        shared.args.batch_size,
-        shared.args.epochs,
-        shared.args.learning_rate,
-        shared.args.lr_scheduler_type,
-        shared.args.lora_rank,
-        shared.args.lora_alpha,
-        shared.args.lora_dropout,
-        shared.args.cutoff_len,
-        shared.args.dataset,
-        shared.args.eval_dataset,
-        shared.args.format,
-        shared.args.eval_steps,
-        shared.args.raw_text_file,
-        shared.args.overlap_len,
-        shared.args.newline_favor_len,
-        shared.args.higher_rank_limit,
-        shared.args.warmup_steps,
-        shared.args.optimizer,
-        shared.args.hard_cut_string
-        ]
-    do_train(*all_params)
+        all_params = [
+            shared.args.lora_name,
+            shared.args.always_override,
+            shared.args.save_steps,
+            shared.args.micro_batch_size,
+            shared.args.batch_size,
+            shared.args.epochs,
+            shared.args.learning_rate,
+            shared.args.lr_scheduler_type,
+            shared.args.lora_rank,
+            shared.args.lora_alpha,
+            shared.args.lora_dropout,
+            shared.args.cutoff_len,
+            shared.args.dataset,
+            shared.args.eval_dataset,
+            shared.args.format,
+            shared.args.eval_steps,
+            shared.args.raw_text_file,
+            shared.args.overlap_len,
+            shared.args.newline_favor_len,
+            shared.args.higher_rank_limit,
+            shared.args.warmup_steps,
+            shared.args.optimizer,
+            shared.args.hard_cut_string
+            ]
+        do_train(*all_params)
