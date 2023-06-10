@@ -4,6 +4,11 @@
 
 ```bash
 pip install -r requirements.txt
+mkdir models
+python download_model.py facebook/opt-1.3b
+#for training without GPU
+python do_training.py --model facebook_opt-1.3b --lora_name em1 --raw_text_file em1 --cpu --load-in-8bit --auto-devices
+
 
 # the following is for training LoRA of any GPTQ model
 mkdir repositories && cd repositories
